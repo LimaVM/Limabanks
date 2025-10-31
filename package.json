@@ -17,7 +17,7 @@
     "dev": "next dev",
     "install:safe": "npm ci --prefer-offline --no-audit --progress=false",
     "lint": "eslint .",
-    "start": "npm run build && next start -H 0.0.0.0 -p ${PORT:-3000}"
+    "start": "npm run build && node server.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

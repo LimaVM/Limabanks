@@ -2,9 +2,6 @@ process.env.TZ = "America/Sao_Paulo"
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
   typescript: {
     ignoreBuildErrors: true,
   },
@@ -14,7 +11,7 @@ const nextConfig = {
   devIndicators: {
     appIsrStatus: false,
     buildActivity: false,
-    buildActivityPosition: 'bottom-right',
+    buildActivityPosition: "bottom-right",
   },
 }
 
