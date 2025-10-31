@@ -111,7 +111,7 @@ export function TransactionForm({ accounts, onAdd }: TransactionFormProps) {
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="type">Tipo</Label>
               <Select value={type} onValueChange={(v) => setType(v as "income" | "expense")}>
@@ -140,16 +140,16 @@ export function TransactionForm({ accounts, onAdd }: TransactionFormProps) {
           </div>
 
           <div className="space-y-2">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <Label>Formas de Pagamento *</Label>
-              <Button type="button" variant="outline" size="sm" onClick={addPayment}>
+              <Button type="button" variant="outline" size="sm" onClick={addPayment} className="w-full sm:w-auto">
                 <Plus className="h-4 w-4 mr-1" />
                 Adicionar
               </Button>
             </div>
 
             {payments.map((payment, index) => (
-              <div key={index} className="flex gap-2 items-end">
+              <div key={index} className="flex flex-col gap-3 sm:flex-row sm:items-end">
                 <div className="flex-1 space-y-2">
                   <Select value={payment.accountId} onValueChange={(v) => updatePayment(index, "accountId", v)}>
                     <SelectTrigger>
@@ -165,7 +165,7 @@ export function TransactionForm({ accounts, onAdd }: TransactionFormProps) {
                   </Select>
                 </div>
 
-                <div className="w-32 space-y-2">
+                <div className="w-full space-y-2 sm:w-32">
                   <Input
                     type="number"
                     step="0.01"
@@ -176,7 +176,13 @@ export function TransactionForm({ accounts, onAdd }: TransactionFormProps) {
                 </div>
 
                 {payments.length > 1 && (
-                  <Button type="button" variant="ghost" size="icon" onClick={() => removePayment(index)}>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => removePayment(index)}
+                    className="self-start sm:self-auto"
+                  >
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 )}

@@ -29,13 +29,15 @@ export function Logo({ width = 200, height = 60, className = "" }: LogoProps) {
 
   const src = isDark ? "/logo-dark.png" : "/logo-light.png"
 
+  const combinedClassName = ["max-w-full h-auto", className].filter(Boolean).join(" ")
+
   return (
     <img
       src={src}
       alt="LimaTech Logo"
       width={width}
       height={height}
-      className={className}
+      className={combinedClassName}
       loading="eager"
     />
   )

@@ -81,7 +81,7 @@ export function CategoryChart({ transactions }: CategoryChartProps) {
               ))}
             </Pie>
             <Tooltip formatter={(value) => formatCurrency(value as number)} />
-            <Legend />
+            <Legend wrapperStyle={{ display: "flex", flexWrap: "wrap", justifyContent: "center" }} />
           </PieChart>
         </ResponsiveContainer>
       </CardContent>

@@ -54,9 +54,9 @@ export function TransactionsList({ transactions, accounts, onDelete }: Transacti
             {sortedTransactions.map((transaction) => (
               <div
                 key={transaction.id}
-                className="flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors"
+                className="flex flex-col gap-4 p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors md:flex-row md:items-center md:justify-between"
               >
-                <div className="flex items-center gap-3 flex-1">
+                <div className="flex flex-col gap-3 flex-1 sm:flex-row sm:items-start sm:gap-3 md:items-center">
                   {transaction.type === "income" ? (
                     <ArrowUpCircle className="h-5 w-5 text-primary flex-shrink-0" />
                   ) : (
@@ -64,7 +64,7 @@ export function TransactionsList({ transactions, accounts, onDelete }: Transacti
                   )}
 
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
+                    <div className="flex flex-wrap items-center gap-2">
                       <span className="font-medium">{transaction.category}</span>
                       <span className="text-xs text-muted-foreground">• {formatBrazilDateTime(transaction.occurredAt)}</span>
                     </div>
@@ -75,7 +75,7 @@ export function TransactionsList({ transactions, accounts, onDelete }: Transacti
                   </div>
                 </div>
 
-                <div className="flex items-center gap-3">
+                <div className="flex w-full items-center justify-between gap-3 md:w-auto md:justify-end">
                   <span
                     className={`font-semibold text-lg ${
                       transaction.type === "income" ? "text-primary" : "text-destructive"
@@ -89,7 +89,7 @@ export function TransactionsList({ transactions, accounts, onDelete }: Transacti
                     variant="ghost"
                     size="icon"
                     onClick={() => onDelete(transaction.id)}
-                    className="text-muted-foreground hover:text-destructive"
+                    className="text-muted-foreground hover:text-destructive self-start md:self-auto"
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>

@@ -243,18 +243,23 @@ export default function App() {
     <div className="min-h-screen bg-background">
       <header className="border-b bg-card">
         <div className="container mx-auto px-4 py-6">
-          <div className="flex items-center justify-between">
-            <div>
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div className="space-y-1">
               <Logo width={180} height={54} />
               <p className="text-sm text-muted-foreground mt-1">{user.email}</p>
             </div>
 
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={handleExportData}>
+            <div className="flex flex-col gap-2 w-full sm:flex-row sm:flex-wrap sm:justify-end md:w-auto">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleExportData}
+                className="w-full sm:w-auto"
+              >
                 <Download className="h-4 w-4 mr-2" />
                 Exportar PDF
               </Button>
-              <Button variant="outline" size="sm" onClick={logout}>
+              <Button variant="outline" size="sm" onClick={logout} className="w-full sm:w-auto">
                 <LogOut className="h-4 w-4 mr-2" />
                 Sair
               </Button>
