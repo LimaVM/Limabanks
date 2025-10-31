@@ -152,13 +152,14 @@ main() {
   build_project
 
   log "Processo concluído com sucesso!"
-  cat <<INFO
+  cat <<'INFO'
 
 Próximos passos sugeridos:
-  1. Configurar PM2 (caso ainda não tenha): npm install -g pm2
-  2. Iniciar a aplicação: pm2 start ecosystem.config.js --name limabank
-  3. Salvar o processo: pm2 save
-  4. Configurar inicialização automática: pm2 startup systemd
+  1. Acesse o diretório do projeto: cd "$APP_DIR"
+  2. (Opcional) Inicie uma sessão screen: screen -S limabank
+  3. Inicie a aplicação: npm start
+  4. Para sair da screen mantendo o processo ativo: pressione Ctrl+A e depois D
+  5. Para retornar à sessão screen: screen -r limabank
 INFO
 }
 
