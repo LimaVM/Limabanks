@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { PlusCircle, Plus, Trash2 } from "lucide-react"
 import type { Account, TransactionPayment } from "@/lib/api-client"
+import { getCurrentBrazilDateTimeLocal, toBrazilISOString } from "@/lib/timezone"
 
 interface TransactionFormProps {
   accounts: Account[]
@@ -30,7 +31,7 @@ export function TransactionForm({ accounts, onAdd }: TransactionFormProps) {
   const [amount, setAmount] = useState("")
   const [category, setCategory] = useState("")
   const [description, setDescription] = useState("")
-  const [occurredAt, setOccurredAt] = useState(() => new Date().toISOString().slice(0, 16))
+  const [occurredAt, setOccurredAt] = useState(() => getCurrentBrazilDateTimeLocal())
 
   const [payments, setPayments] = useState<TransactionPayment[]>([{ accountId: "", amount: 0 }])
 
@@ -58,9 +59,9 @@ export function TransactionForm({ accounts, onAdd }: TransactionFormProps) {
       return
     }
 
-    const occurredAtDate = new Date(occurredAt)
+    const occurredAtIso = toBrazilISOString(occurredAt)
 
-    if (Number.isNaN(occurredAtDate.getTime())) {
+    if (!occurredAtIso) {
       alert("Data e hora inválidas")
       return
     }
@@ -70,7 +71,7 @@ export function TransactionForm({ accounts, onAdd }: TransactionFormProps) {
       amount: totalAmount,
       category,
       description,
-      occurredAt: occurredAtDate.toISOString(),
+      occurredAt: occurredAtIso,
       payments: validPayments,
     })
 
@@ -78,7 +79,7 @@ export function TransactionForm({ accounts, onAdd }: TransactionFormProps) {
     setAmount("")
     setCategory("")
     setDescription("")
-    setOccurredAt(new Date().toISOString().slice(0, 16))
+    setOccurredAt(getCurrentBrazilDateTimeLocal())
     setPayments([{ accountId: "", amount: 0 }])
   }
 

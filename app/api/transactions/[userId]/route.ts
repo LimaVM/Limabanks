@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { readJSON, writeJSON, type FinanceData, type Transaction, type TransactionPayment } from "@/lib/server-storage"
+import { toBrazilISOString } from "@/lib/timezone"
 
 export async function POST(request: Request, { params }: { params: { userId: string } }) {
   try {
@@ -36,10 +37,27 @@ export async function POST(request: Request, { params }: { params: { userId: str
       )
     }
 
+    const occurredAtInput = String(transactionData.occurredAt)
+    let occurredAtIso: string | null = null
+
+    if (occurredAtInput.endsWith("Z") || occurredAtInput.includes("+")) {
+      const occurredAtDate = new Date(occurredAtInput)
+      if (!Number.isNaN(occurredAtDate.getTime())) {
+        occurredAtIso = occurredAtDate.toISOString()
+      }
+    } else {
+      occurredAtIso = toBrazilISOString(occurredAtInput)
+    }
+
+    if (!occurredAtIso) {
+      return NextResponse.json({ error: "Data da transação inválida" }, { status: 400 })
+    }
+
     const newTransaction: Transaction = {
       ...transactionData,
       amount: totalAmount,
       payments: normalizedPayments,
+      occurredAt: occurredAtIso,
       id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
     }
 

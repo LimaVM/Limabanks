@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Trash2, ArrowUpCircle, ArrowDownCircle } from "lucide-react"
 import type { Transaction, Account } from "@/lib/api-client"
+import { formatBrazilDateTime } from "@/lib/timezone"
 
 interface TransactionsListProps {
   transactions: Transaction[]
@@ -17,17 +18,6 @@ export function TransactionsList({ transactions, accounts, onDelete }: Transacti
       style: "currency",
       currency: "BRL",
     }).format(value)
-  }
-
-  const formatDateTime = (isoDate: string) => {
-    const date = new Date(isoDate)
-    if (Number.isNaN(date.getTime())) {
-      return "Data inválida"
-    }
-    return date.toLocaleString("pt-BR", {
-      dateStyle: "short",
-      timeStyle: "short",
-    })
   }
 
   const getAccountName = (accountId: string) => {
@@ -76,7 +66,7 @@ export function TransactionsList({ transactions, accounts, onDelete }: Transacti
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="font-medium">{transaction.category}</span>
-                      <span className="text-xs text-muted-foreground">• {formatDateTime(transaction.occurredAt)}</span>
+                      <span className="text-xs text-muted-foreground">• {formatBrazilDateTime(transaction.occurredAt)}</span>
                     </div>
                     {transaction.description && (
                       <p className="text-sm text-muted-foreground truncate">{transaction.description}</p>

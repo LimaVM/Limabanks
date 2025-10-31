@@ -21,6 +21,7 @@ import {
   type Transaction,
   type Account,
 } from "@/lib/api-client"
+import { BRAZIL_TIMEZONE, formatBrazilDateTime } from "@/lib/timezone"
 
 export default function FinancePage() {
   const [userId, setUserId] = useState<string | null>(() => {
@@ -140,10 +141,11 @@ export default function FinancePage() {
     const doc = new jsPDF()
 
     const generatedAt = new Date()
-    const formattedDate = generatedAt.toLocaleString("pt-BR", {
+    const formattedDate = new Intl.DateTimeFormat("pt-BR", {
       dateStyle: "full",
       timeStyle: "short",
-    })
+      timeZone: BRAZIL_TIMEZONE,
+    }).format(generatedAt)
 
     const totalIncome = data.transactions
       .filter((transaction) => transaction.type === "income")
@@ -192,10 +194,7 @@ export default function FinancePage() {
           .join(" | ")
 
         return [
-          new Date(transaction.occurredAt).toLocaleString("pt-BR", {
-            dateStyle: "short",
-            timeStyle: "short",
-          }),
+          formatBrazilDateTime(transaction.occurredAt),
           transaction.type === "income" ? "Receita" : "Despesa",
           transaction.category,
           transaction.description || "-",

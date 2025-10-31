@@ -1,3 +1,5 @@
+import { getCurrentBrazilDateTimeLocal, toBrazilISOString } from "@/lib/timezone"
+
 export interface User {
   id: string
   email: string
@@ -51,7 +53,7 @@ export function registerUser(email: string, password: string): { success: boolea
     id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
     email,
     password, // Em produção, use hash de senha!
-    createdAt: new Date().toISOString(),
+    createdAt: toBrazilISOString(getCurrentBrazilDateTimeLocal()) || new Date().toISOString(),
   }
 
   authData.users.push(newUser)
