@@ -1,7 +1,6 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import Image from "next/image"
 
 interface LogoProps {
   width?: number
@@ -13,14 +12,12 @@ export function Logo({ width = 200, height = 60, className = "" }: LogoProps) {
   const [isDark, setIsDark] = useState(false)
 
   useEffect(() => {
-    // Verificar tema inicial
     const checkTheme = () => {
       setIsDark(document.documentElement.classList.contains("dark"))
     }
 
     checkTheme()
 
-    // Observer para mudanças no tema
     const observer = new MutationObserver(checkTheme)
     observer.observe(document.documentElement, {
       attributes: true,
@@ -30,14 +27,16 @@ export function Logo({ width = 200, height = 60, className = "" }: LogoProps) {
     return () => observer.disconnect()
   }, [])
 
+  const src = isDark ? "/logo-dark.png" : "/logo-light.png"
+
   return (
-    <Image
-      src={isDark ? "/logo-dark.png" : "/logo-light.png"}
+    <img
+      src={src}
       alt="LimaTech Logo"
       width={width}
       height={height}
       className={className}
-      priority
+      loading="eager"
     />
   )
 }

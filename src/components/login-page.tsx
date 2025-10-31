@@ -48,8 +48,9 @@ export function LoginPage({ onLogin }: LoginPageProps) {
           }
         }
       }
-    } catch (err: any) {
-      setError(err.message || "Erro ao processar requisição")
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Erro ao processar requisição"
+      setError(message)
     } finally {
       setLoading(false)
     }

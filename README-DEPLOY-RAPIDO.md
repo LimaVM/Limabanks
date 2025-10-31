@@ -1,128 +1,95 @@
 # Deploy Rápido - LimaBank (Servidor 1GB RAM)
 
-## Diretório de Deploy
+## Diretório do Projeto
 
-**Sempre usar:** `/home/ubuntu/LIMABANK`
+Utilize sempre: `/home/ubuntu/LIMABANK`
 
 ## Armazenamento de Dados
 
-**Diretório de dados:** `/home/ubuntu/BANCO_APP`
+- Diretório: `/home/ubuntu/BANCO_DATA`
+- Arquivos criados automaticamente:
+  - `auth.json` – usuários
+  - `finance-<userId>.json` – dados financeiros por usuário
 
-Os dados são armazenados em arquivos JSON no servidor:
-- `auth.json` - Usuários cadastrados
-- `finance-{userId}.json` - Dados financeiros de cada usuário
+## Passo a Passo
 
-O sistema cria automaticamente o diretório na primeira execução.
-
-## Instalação Rápida
-
-\`\`\`bash
-# 1. Instalar Node.js 20 e PM2
+```bash
+# 1. Instalar Node.js 20
 curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
-sudo apt install -y nodejs
-sudo npm install -g pm2
+sudo apt install -y nodejs build-essential
 
-# 2. Ir para o diretório do projeto
+# 2. Preparar diretório do projeto
+sudo mkdir -p /home/ubuntu/LIMABANK
+sudo chown -R $USER:$USER /home/ubuntu/LIMABANK
 cd /home/ubuntu/LIMABANK
 
-# 3. Instalar com swap (IMPORTANTE para 1GB RAM)
-chmod +x install-with-swap.sh
-sudo bash install-with-swap.sh
-# Responda 's' para manter o swap permanente
+git clone <seu-repositorio> .
 
-# 4. Configurar permissões para portas 80/443
-sudo setcap 'cap_net_bind_service=+ep' $(which node)
+# 3. Criar swap temporário (evita travamentos com 1 GB de RAM)
+sudo fallocate -l 2G /swapfile
+sudo chmod 600 /swapfile
+sudo mkswap /swapfile
+sudo swapon /swapfile
 
-# 5. Criar diretório de dados
-sudo mkdir -p /home/ubuntu/BANCO_APP
-sudo chown -R ubuntu:ubuntu /home/ubuntu/BANCO_APP
-sudo chmod 755 /home/ubuntu/BANCO_APP
+# 4. Instalar dependências
+npm install --no-progress
 
-# 6. Iniciar aplicação
-pm2 start ecosystem.config.js
-pm2 save
-pm2 startup
-# Execute o comando sugerido pelo PM2
+# 5. Habilitar Node nas portas 80/443
+sudo setcap 'cap_net_bind_service=+ep' "$(command -v node)"
 
-# 7. Configurar firewall
-sudo ufw allow 80/tcp
-sudo ufw allow 443/tcp
-sudo ufw allow 22/tcp
-sudo ufw enable
+# 6. (Opcional) remover swap
+sudo swapoff /swapfile
+sudo rm /swapfile
 
-# 8. Verificar
-pm2 status
-pm2 logs limabank
-curl -I https://con.devlima.wtf
-\`\`\`
+# 7. Iniciar dentro de uma screen
+screen -S limabank
+npm start
+# Para sair da sessão mantendo o app rodando: Ctrl + A, depois D
+```
 
-## Pronto!
-
-Acesse: https://con.devlima.wtf
+O comando `npm start` recompila o front-end (Vite) e, em seguida, inicia o servidor Express nas portas 80 e 443. Se os certificados de `/etc/letsencrypt/live/con.devlima.wtf/` não existirem, apenas HTTP ficará disponível.
 
 ## Recursos do Sistema
 
-- ✅ Armazenamento no servidor (não no navegador)
-- ✅ Múltiplos usuários com login/senha
-- ✅ Sincronização em tempo real (atualiza a cada 3 segundos)
-- ✅ Múltiplos dispositivos podem usar a mesma conta
-- ✅ PWA instalável
-- ✅ Modo escuro/claro automático
+- ✅ Armazenamento por usuário no servidor
+- ✅ Login/registro com isolamento de dados
+- ✅ Atualização automática a cada 1 segundo
+- ✅ Exportação financeira em PDF
+- ✅ PWA instalável e responsivo
+- ✅ Fuso horário fixo em Brasília
 
 ## Comandos Úteis
 
-\`\`\`bash
-# Ver logs
-pm2 logs limabank
+```bash
+# Reanexar à sessão
+screen -r limabank
 
-# Reiniciar
-pm2 restart limabank
+# Ver sessões screen ativas
+screen -ls
 
-# Status
-pm2 status
+# Atualizar para uma nova versão
+git pull
+npm install --no-progress
+npm start
 
-# Monitorar memória
-pm2 monit
-free -h
+# Conferir dados salvos
+ls -lh /home/ubuntu/BANCO_DATA
+cat /home/ubuntu/BANCO_DATA/auth.json | jq .
 
-# Ver dados armazenados
-ls -lh /home/ubuntu/BANCO_APP
-cat /home/ubuntu/BANCO_APP/auth.json
+# Backup rápido
+sudo tar -czf backup-$(date +%Y%m%d).tar.gz /home/ubuntu/BANCO_DATA
+```
 
-# Backup dos dados
-tar -czf backup-$(date +%Y%m%d).tar.gz /home/ubuntu/BANCO_APP
-\`\`\`
+## Problemas Comuns
 
-## Problemas?
-
-### npm install travando?
-\`\`\`bash
-cd /home/ubuntu/LIMABANK
-sudo bash install-with-swap.sh
-\`\`\`
-
-### Aplicação usando muita memória?
-\`\`\`bash
-pm2 restart limabank
-\`\`\`
-
-### Certificados SSL?
-\`\`\`bash
-sudo certbot renew
-pm2 restart limabank
-\`\`\`
-
-### Erro ao salvar dados?
-\`\`\`bash
-# Verificar permissões
-ls -la /home/ubuntu/BANCO_APP
-sudo chown -R ubuntu:ubuntu /home/ubuntu/BANCO_APP
-pm2 restart limabank
-\`\`\`
+- **`npm install` travando?** – Crie swap (passo 3).
+- **Permissão negada ao salvar dados?** – `sudo chown -R ubuntu:ubuntu /home/ubuntu/BANCO_DATA`
+- **Porta 80 indisponível?** – Verifique se outro serviço está escutando e confirme o `setcap`.
+- **HTTPS não inicia?** – Ajuste `HTTPS_CERT_PATH` e `HTTPS_KEY_PATH` antes de rodar `npm start`.
 
 ## Documentação Completa
 
-Veja `DEPLOY.md` para instruções detalhadas e troubleshooting.
+Consulte `DEPLOY.md` para detalhes e troubleshooting.
 
 ---
 

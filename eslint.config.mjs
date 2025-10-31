@@ -1,10 +1,35 @@
-import nextConfig from 'eslint-config-next';
+import js from "@eslint/js"
+import tseslint from "typescript-eslint"
+import reactHooks from "eslint-plugin-react-hooks"
+import reactPlugin from "eslint-plugin-react"
 
-const config = [
+export default tseslint.config(
   {
-    ignores: ['**/.next/**', 'node_modules/**', 'public/**'],
+    ignores: ["dist/**", "node_modules/**", "public/**"],
   },
-  ...nextConfig,
-];
-
-export default config;
+  js.configs.recommended,
+  ...tseslint.configs.recommended,
+  {
+    plugins: {
+      react: reactPlugin,
+      "react-hooks": reactHooks,
+    },
+    languageOptions: {
+      parserOptions: {
+        ecmaFeatures: {
+          jsx: true,
+        },
+      },
+    },
+    settings: {
+      react: {
+        version: "detect",
+      },
+    },
+    rules: {
+      "react/react-in-jsx-scope": "off",
+      "react-hooks/rules-of-hooks": "error",
+      "react-hooks/exhaustive-deps": "warn",
+    },
+  },
+)

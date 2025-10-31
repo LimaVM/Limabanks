@@ -1,6 +1,4 @@
-"use client"
-
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import useSWR, { mutate } from "swr"
 import { TransactionForm } from "@/components/transaction-form"
 import { SummaryCards } from "@/components/summary-cards"
@@ -23,109 +21,118 @@ import {
 } from "@/lib/api-client"
 import { BRAZIL_TIMEZONE, formatBrazilDateTime } from "@/lib/timezone"
 
-export default function FinancePage() {
-  const [userId, setUserId] = useState<string | null>(() => {
-    if (typeof window === "undefined") {
-      return null
-    }
+type AutoTableEnhancedDoc = {
+  lastAutoTable?: {
+    finalY?: number
+  }
+}
+
+function usePersistentUser() {
+  const [user, setUser] = useState<{ id: string; email: string } | null>(() => {
+    if (typeof window === "undefined") return null
 
     const savedUserId = localStorage.getItem("userId")
     const savedEmail = localStorage.getItem("userEmail")
 
     if (savedUserId && savedEmail) {
-      return savedUserId
+      return { id: savedUserId, email: savedEmail }
     }
 
     return null
   })
-  const [userEmail, setUserEmail] = useState<string | null>(() => {
-    if (typeof window === "undefined") {
-      return null
-    }
 
-    const savedUserId = localStorage.getItem("userId")
-    const savedEmail = localStorage.getItem("userEmail")
+  useEffect(() => {
+    if (!user) return
 
-    if (savedUserId && savedEmail) {
-      return savedEmail
-    }
+    localStorage.setItem("userId", user.id)
+    localStorage.setItem("userEmail", user.email)
+  }, [user])
 
-    return null
-  })
+  const logout = () => {
+    setUser(null)
+    if (typeof window === "undefined") return
+    localStorage.removeItem("userId")
+    localStorage.removeItem("userEmail")
+  }
+
+  return {
+    user,
+    setUser,
+    logout,
+  }
+}
+
+export default function App() {
+  const { user, setUser, logout } = usePersistentUser()
 
   const { data, error, isLoading } = useSWR(
-    userId ? `/api/finance/${userId}` : null,
-    () => (userId ? getFinanceData(userId) : null),
+    user ? `/api/finance/${user.id}` : null,
+    () => (user ? getFinanceData(user.id) : null),
     {
-      refreshInterval: 1000, // Atualiza a cada 1 segundo
+      refreshInterval: 1000,
       revalidateOnFocus: true,
       revalidateOnReconnect: true,
     },
   )
 
-  const transactions = data?.transactions || []
-  const accounts = data?.accounts || []
+  const transactions = data?.transactions ?? []
+  const accounts = data?.accounts ?? []
+
+  useEffect(() => {
+    if (!error) return
+    console.error("Erro ao carregar dados financeiros:", error)
+  }, [error])
 
   const handleLogin = (id: string, email: string) => {
-    setUserId(id)
-    setUserEmail(email)
-    localStorage.setItem("userId", id)
-    localStorage.setItem("userEmail", email)
-  }
-
-  const handleLogout = () => {
-    setUserId(null)
-    setUserEmail(null)
-    localStorage.removeItem("userId")
-    localStorage.removeItem("userEmail")
+    setUser({ id, email })
   }
 
   const handleAddAccount = async (account: Omit<Account, "id">) => {
-    if (!userId) return
+    if (!user) return
     try {
-      await apiAddAccount(userId, account)
-      mutate(`/api/finance/${userId}`) // Revalidar dados
-    } catch (error) {
-      console.error("Error adding account:", error)
+      await apiAddAccount(user.id, account)
+      mutate(`/api/finance/${user.id}`)
+    } catch (err) {
+      console.error("Error adding account:", err)
       alert("Erro ao adicionar conta")
     }
   }
 
   const handleDeleteAccount = async (id: string) => {
-    if (!userId) return
+    if (!user) return
     try {
-      await apiDeleteAccount(userId, id)
-      mutate(`/api/finance/${userId}`) // Revalidar dados
-    } catch (error) {
-      console.error("Error deleting account:", error)
+      await apiDeleteAccount(user.id, id)
+      mutate(`/api/finance/${user.id}`)
+    } catch (err) {
+      console.error("Error deleting account:", err)
       alert("Erro ao deletar conta")
     }
   }
 
   const handleAddTransaction = async (transaction: Omit<Transaction, "id">) => {
-    if (!userId) return
+    if (!user) return
     try {
-      await apiAddTransaction(userId, transaction)
-      mutate(`/api/finance/${userId}`) // Revalidar dados
-    } catch (error) {
-      console.error("Error adding transaction:", error)
+      await apiAddTransaction(user.id, transaction)
+      mutate(`/api/finance/${user.id}`)
+    } catch (err) {
+      console.error("Error adding transaction:", err)
       alert("Erro ao adicionar transação")
     }
   }
 
   const handleDeleteTransaction = async (id: string) => {
-    if (!userId) return
+    if (!user) return
     try {
-      await apiDeleteTransaction(userId, id)
-      mutate(`/api/finance/${userId}`) // Revalidar dados
-    } catch (error) {
-      console.error("Error deleting transaction:", error)
+      await apiDeleteTransaction(user.id, id)
+      mutate(`/api/finance/${user.id}`)
+    } catch (err) {
+      console.error("Error deleting transaction:", err)
       alert("Erro ao deletar transação")
     }
   }
 
   const handleExportData = async () => {
-    if (!data || !userEmail) return
+    if (!data || !user?.email) return
 
     const [{ jsPDF }, autoTableModule] = await Promise.all([
       import("jspdf"),
@@ -138,8 +145,8 @@ export default function FinancePage() {
       alert("Não foi possível gerar o PDF no momento")
       return
     }
-    const doc = new jsPDF()
 
+    const doc = new jsPDF()
     const generatedAt = new Date()
     const formattedDate = new Intl.DateTimeFormat("pt-BR", {
       dateStyle: "full",
@@ -162,7 +169,7 @@ export default function FinancePage() {
     doc.text("Relatório Financeiro Completo", 14, 20)
 
     doc.setFontSize(11)
-    doc.text(`Usuário: ${userEmail}`, 14, 30)
+    doc.text(`Usuário: ${user.email}`, 14, 30)
     doc.text(`Gerado em: ${formattedDate}`, 14, 36)
     doc.text(`Receitas totais: ${formatCurrency(totalIncome)}`, 14, 42)
     doc.text(`Despesas totais: ${formatCurrency(totalExpense)}`, 14, 48)
@@ -179,7 +186,10 @@ export default function FinancePage() {
       styles: { fontSize: 9 },
     })
 
-    const transactionsStartY = (doc as any).lastAutoTable?.finalY ? (doc as any).lastAutoTable.finalY + 10 : 70
+    const enhancedDoc = doc as typeof doc & AutoTableEnhancedDoc
+    const transactionsStartY = enhancedDoc.lastAutoTable?.finalY
+      ? enhancedDoc.lastAutoTable.finalY + 10
+      : 70
 
     autoTable(doc, {
       startY: transactionsStartY,
@@ -209,7 +219,7 @@ export default function FinancePage() {
     doc.save(`relatorio-financeiro-${generatedAt.toISOString().split("T")[0]}.pdf`)
   }
 
-  if (!userId) {
+  if (!user) {
     return (
       <>
         <LoginPage onLogin={handleLogin} />
@@ -236,7 +246,7 @@ export default function FinancePage() {
           <div className="flex items-center justify-between">
             <div>
               <Logo width={180} height={54} />
-              <p className="text-sm text-muted-foreground mt-1">{userEmail}</p>
+              <p className="text-sm text-muted-foreground mt-1">{user.email}</p>
             </div>
 
             <div className="flex gap-2">
@@ -244,7 +254,7 @@ export default function FinancePage() {
                 <Download className="h-4 w-4 mr-2" />
                 Exportar PDF
               </Button>
-              <Button variant="outline" size="sm" onClick={handleLogout}>
+              <Button variant="outline" size="sm" onClick={logout}>
                 <LogOut className="h-4 w-4 mr-2" />
                 Sair
               </Button>
@@ -255,7 +265,7 @@ export default function FinancePage() {
 
       <main className="container mx-auto px-4 py-8">
         <div className="space-y-8">
-          <SummaryCards transactions={transactions} accounts={accounts} />
+          <SummaryCards accounts={accounts} />
 
           <AccountManager accounts={accounts} onAdd={handleAddAccount} onDelete={handleDeleteAccount} />
 
