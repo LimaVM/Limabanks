@@ -2,21 +2,29 @@
 <html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no"
+    />
+    <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
     <title>LimaBank - Controle Financeiro</title>
     <meta
       name="description"
       content="Sistema de controle financeiro pessoal desenvolvido por DevLima Soluções"
     />
     <meta name="theme-color" content="#10b981" />
-    <link rel="manifest" href="/manifest.json" />
+    <link rel="manifest" href="/manifest.json?v=__APP_CACHE_VERSION__" />
     <link rel="apple-touch-icon" href="/logo.jpg" />
     <link rel="icon" type="image/png" href="/logo.png" />
     <script>
+      window.__LIMABANK_CACHE_VERSION__ = "__APP_CACHE_VERSION__"
+
       if ("serviceWorker" in navigator) {
         window.addEventListener("load", () => {
           navigator.serviceWorker
-            .register("/sw.js")
+            .register(`/sw.js?v=${window.__LIMABANK_CACHE_VERSION__}`)
             .catch((error) => console.log("SW registration failed:", error))
         })
       }

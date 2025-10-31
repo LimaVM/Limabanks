@@ -1,5 +1,6 @@
 import fs from "fs"
 import path from "path"
+import { randomUUID } from "crypto"
 import { fileURLToPath } from "url"
 import express from "express"
 import compression from "compression"
@@ -21,11 +22,26 @@ const __dirname = path.dirname(__filename)
 
 const distDir = path.join(__dirname, "dist")
 const indexFile = path.join(distDir, "index.html")
+const manifestFile = path.join(distDir, "manifest.json")
+
+const serverCacheVersion = `${Date.now()}-${randomUUID()}`
+const serviceWorkerCacheName = `limabank-cache-${serverCacheVersion}`
+
+function setNoStoreHeaders(res) {
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate")
+  res.setHeader("Pragma", "no-cache")
+  res.setHeader("Expires", "0")
+  res.setHeader("Surrogate-Control", "no-store")
+}
 
 const app = express()
 
 app.use(helmet({ contentSecurityPolicy: false }))
 app.use(compression())
+app.use((req, res, next) => {
+  setNoStoreHeaders(res)
+  next()
+})
 app.use(express.json({ limit: "1mb" }))
 app.use(express.urlencoded({ extended: true }))
 app.use(morgan("combined"))
@@ -76,6 +92,112 @@ app.post("/api/auth/register", (req, res) => {
     return res.status(500).json({ error: "Erro ao registrar usuário" })
   }
 })
+
+app.get("/sw.js", (req, res) => {
+  setNoStoreHeaders(res)
+  res.setHeader("Content-Type", "application/javascript")
+  res.setHeader("Service-Worker-Allowed", "/")
+  res.send(`const CACHE_NAME = "${serviceWorkerCacheName}";
+const CACHE_VERSION = "${serverCacheVersion}";
+const PRECACHE_URLS = [
+  "/",
+  "/?v=" + CACHE_VERSION,
+  "/logo.png",
+  "/manifest.json",
+  "/manifest.json?v=" + CACHE_VERSION,
+  "/icon-192.jpg",
+  "/icon-512.jpg",
+];
+
+self.addEventListener("install", (event) => {
+  event.waitUntil(
+    (async () => {
+      const cache = await caches.open(CACHE_NAME)
+      await cache.addAll(PRECACHE_URLS.map((url) => new Request(url, { cache: "reload" })))
+      await self.skipWaiting()
+    })(),
+  )
+})
+
+self.addEventListener("activate", (event) => {
+  event.waitUntil(
+    (async () => {
+      const keys = await caches.keys()
+      await Promise.all(keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key)))
+      await self.clients.claim()
+    })(),
+  )
+})
+
+self.addEventListener("fetch", (event) => {
+  if (event.request.method !== "GET") {
+    return
+  }
+
+  if (event.request.mode === "navigate") {
+    event.respondWith(
+      fetch(event.request).catch(() =>
+        caches
+          .match(event.request, { ignoreSearch: true })
+          .then((response) => response || caches.match("/", { ignoreSearch: true })),
+      ),
+    )
+    return
+  }
+
+  event.respondWith(
+    fetch(event.request)
+      .then((response) => {
+        const clonedResponse = response.clone()
+        const contentType = clonedResponse.headers.get("Content-Type") ?? ""
+
+        if (clonedResponse.ok && (contentType.includes("text") || contentType.includes("application"))) {
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clonedResponse))
+        }
+
+        return response
+      })
+      .catch(async () => {
+        const cache = await caches.open(CACHE_NAME)
+        const cachedResponse = await cache.match(event.request, { ignoreSearch: true })
+        if (cachedResponse) {
+          return cachedResponse
+        }
+        return new Response("", { status: 504, statusText: "Offline" })
+      }),
+  )
+})
+`)
+})
+
+let cachedIndexHtml = null
+let cachedManifest = null
+
+function getIndexTemplate() {
+  if (!fs.existsSync(indexFile)) {
+    cachedIndexHtml = null
+    return null
+  }
+
+  if (!cachedIndexHtml) {
+    cachedIndexHtml = fs.readFileSync(indexFile, "utf8")
+  }
+
+  return cachedIndexHtml
+}
+
+function getManifestTemplate() {
+  if (!fs.existsSync(manifestFile)) {
+    cachedManifest = null
+    return null
+  }
+
+  if (!cachedManifest) {
+    cachedManifest = fs.readFileSync(manifestFile, "utf8")
+  }
+
+  return cachedManifest
+}
 
 app.post("/api/auth/login", (req, res) => {
   try {
@@ -286,16 +408,42 @@ app.delete("/api/transactions/:userId", (req, res) => {
   }
 })
 
+app.get("/manifest.json", (req, res) => {
+  const manifestTemplate = getManifestTemplate()
+
+  if (!manifestTemplate) {
+    return res.status(503).send("Manifesto indisponível")
+  }
+
+  setNoStoreHeaders(res)
+  res.setHeader("Content-Type", "application/manifest+json")
+  const manifestWithVersion = manifestTemplate.replace(/__APP_CACHE_VERSION__/g, serverCacheVersion)
+  return res.send(manifestWithVersion)
+})
+
 if (fs.existsSync(distDir)) {
-  app.use(express.static(distDir, { maxAge: "1y", index: false }))
+  app.use(
+    express.static(distDir, {
+      index: false,
+      maxAge: 0,
+      setHeaders: (res) => {
+        setNoStoreHeaders(res)
+      },
+    }),
+  )
 }
 
 app.get("*", (req, res) => {
-  if (!fs.existsSync(indexFile)) {
+  const indexTemplate = getIndexTemplate()
+
+  if (!indexTemplate) {
     return res.status(503).send("Aplicação ainda não foi compilada")
   }
 
-  return res.sendFile(indexFile)
+  setNoStoreHeaders(res)
+  const htmlWithVersion = indexTemplate.replace(/__APP_CACHE_VERSION__/g, serverCacheVersion)
+  res.setHeader("Content-Type", "text/html; charset=utf-8")
+  return res.send(htmlWithVersion)
 })
 
 const hostname = "0.0.0.0"
