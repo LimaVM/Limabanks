@@ -24,7 +24,7 @@ export interface Transaction {
   amount: number
   category: string
   description: string
-  date: string
+  occurredAt: string
   payments: TransactionPayment[]
 }
 
@@ -39,6 +39,7 @@ export async function registerUser(email: string, password: string) {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email, password }),
+    cache: "no-store",
   })
 
   if (!res.ok) {
@@ -54,6 +55,7 @@ export async function loginUser(email: string, password: string) {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email, password }),
+    cache: "no-store",
   })
 
   if (!res.ok) {
@@ -66,7 +68,7 @@ export async function loginUser(email: string, password: string) {
 
 // Finance APIs
 export async function getFinanceData(userId: string): Promise<FinanceData> {
-  const res = await fetch(`/api/finance/${userId}`)
+  const res = await fetch(`/api/finance/${userId}`, { cache: "no-store" })
 
   if (!res.ok) {
     throw new Error("Erro ao buscar dados financeiros")
@@ -80,6 +82,7 @@ export async function addAccount(userId: string, account: Omit<Account, "id">) {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(account),
+    cache: "no-store",
   })
 
   if (!res.ok) {
@@ -92,6 +95,7 @@ export async function addAccount(userId: string, account: Omit<Account, "id">) {
 export async function deleteAccount(userId: string, accountId: string) {
   const res = await fetch(`/api/accounts/${userId}?id=${accountId}`, {
     method: "DELETE",
+    cache: "no-store",
   })
 
   if (!res.ok) {
@@ -106,6 +110,7 @@ export async function addTransaction(userId: string, transaction: Omit<Transacti
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(transaction),
+    cache: "no-store",
   })
 
   if (!res.ok) {
@@ -118,24 +123,11 @@ export async function addTransaction(userId: string, transaction: Omit<Transacti
 export async function deleteTransaction(userId: string, transactionId: string) {
   const res = await fetch(`/api/transactions/${userId}?id=${transactionId}`, {
     method: "DELETE",
+    cache: "no-store",
   })
 
   if (!res.ok) {
     throw new Error("Erro ao deletar transação")
-  }
-
-  return res.json()
-}
-
-export async function clearAllData(userId: string) {
-  const res = await fetch(`/api/finance/${userId}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ transactions: [], accounts: [] }),
-  })
-
-  if (!res.ok) {
-    throw new Error("Erro ao limpar dados")
   }
 
   return res.json()

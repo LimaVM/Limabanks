@@ -8,7 +8,8 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { PlusCircle, Plus, Trash2 } from "lucide-react"
-import type { Account, TransactionPayment } from "@/lib/finance-storage"
+import type { Account, TransactionPayment } from "@/lib/api-client"
+import { getCurrentBrazilDateTimeLocal, toBrazilISOString } from "@/lib/timezone"
 
 interface TransactionFormProps {
   accounts: Account[]
@@ -17,7 +18,7 @@ interface TransactionFormProps {
     amount: number
     category: string
     description: string
-    date: string
+    occurredAt: string
     payments: TransactionPayment[] // Suporte para múltiplas formas de pagamento
   }) => void
 }
@@ -30,7 +31,7 @@ export function TransactionForm({ accounts, onAdd }: TransactionFormProps) {
   const [amount, setAmount] = useState("")
   const [category, setCategory] = useState("")
   const [description, setDescription] = useState("")
-  const [date, setDate] = useState(new Date().toISOString().split("T")[0])
+  const [occurredAt, setOccurredAt] = useState(() => getCurrentBrazilDateTimeLocal())
 
   const [payments, setPayments] = useState<TransactionPayment[]>([{ accountId: "", amount: 0 }])
 
@@ -58,12 +59,19 @@ export function TransactionForm({ accounts, onAdd }: TransactionFormProps) {
       return
     }
 
+    const occurredAtIso = toBrazilISOString(occurredAt)
+
+    if (!occurredAtIso) {
+      alert("Data e hora inválidas")
+      return
+    }
+
     onAdd({
       type,
       amount: totalAmount,
       category,
       description,
-      date,
+      occurredAt: occurredAtIso,
       payments: validPayments,
     })
 
@@ -71,7 +79,7 @@ export function TransactionForm({ accounts, onAdd }: TransactionFormProps) {
     setAmount("")
     setCategory("")
     setDescription("")
-    setDate(new Date().toISOString().split("T")[0])
+    setOccurredAt(getCurrentBrazilDateTimeLocal())
     setPayments([{ accountId: "", amount: 0 }])
   }
 
@@ -103,7 +111,7 @@ export function TransactionForm({ accounts, onAdd }: TransactionFormProps) {
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="type">Tipo</Label>
               <Select value={type} onValueChange={(v) => setType(v as "income" | "expense")}>
@@ -132,16 +140,16 @@ export function TransactionForm({ accounts, onAdd }: TransactionFormProps) {
           </div>
 
           <div className="space-y-2">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <Label>Formas de Pagamento *</Label>
-              <Button type="button" variant="outline" size="sm" onClick={addPayment}>
+              <Button type="button" variant="outline" size="sm" onClick={addPayment} className="w-full sm:w-auto">
                 <Plus className="h-4 w-4 mr-1" />
                 Adicionar
               </Button>
             </div>
 
             {payments.map((payment, index) => (
-              <div key={index} className="flex gap-2 items-end">
+              <div key={index} className="flex flex-col gap-3 sm:flex-row sm:items-end">
                 <div className="flex-1 space-y-2">
                   <Select value={payment.accountId} onValueChange={(v) => updatePayment(index, "accountId", v)}>
                     <SelectTrigger>
@@ -157,7 +165,7 @@ export function TransactionForm({ accounts, onAdd }: TransactionFormProps) {
                   </Select>
                 </div>
 
-                <div className="w-32 space-y-2">
+                <div className="w-full space-y-2 sm:w-32">
                   <Input
                     type="number"
                     step="0.01"
@@ -168,7 +176,13 @@ export function TransactionForm({ accounts, onAdd }: TransactionFormProps) {
                 </div>
 
                 {payments.length > 1 && (
-                  <Button type="button" variant="ghost" size="icon" onClick={() => removePayment(index)}>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => removePayment(index)}
+                    className="self-start sm:self-auto"
+                  >
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 )}
@@ -203,8 +217,14 @@ export function TransactionForm({ accounts, onAdd }: TransactionFormProps) {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="date">Data</Label>
-            <Input id="date" type="date" value={date} onChange={(e) => setDate(e.target.value)} required />
+            <Label htmlFor="datetime">Data e hora</Label>
+            <Input
+              id="datetime"
+              type="datetime-local"
+              value={occurredAt}
+              onChange={(e) => setOccurredAt(e.target.value)}
+              required
+            />
           </div>
 
           <Button type="submit" className="w-full" disabled={accounts.length === 0}>

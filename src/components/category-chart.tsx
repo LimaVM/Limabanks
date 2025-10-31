@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts"
-import type { Transaction } from "@/lib/finance-storage"
+import type { Transaction } from "@/lib/api-client"
 
 interface CategoryChartProps {
   transactions: Transaction[]
@@ -81,7 +81,7 @@ export function CategoryChart({ transactions }: CategoryChartProps) {
               ))}
             </Pie>
             <Tooltip formatter={(value) => formatCurrency(value as number)} />
-            <Legend />
+            <Legend wrapperStyle={{ display: "flex", flexWrap: "wrap", justifyContent: "center" }} />
           </PieChart>
         </ResponsiveContainer>
       </CardContent>

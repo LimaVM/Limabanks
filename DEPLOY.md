@@ -1,409 +1,128 @@
 # Tutorial de Deploy - LimaBank na VPS Ubuntu (1GB RAM)
 
-## Importante: Servidor com Pouca RAM
+Este guia foi otimizado para servidores com **1 GB de RAM** executando **Ubuntu 24.04** e **Node.js 20**. O backend Express expõe HTTP na porta 80 e, se certificados válidos estiverem disponíveis, HTTPS na porta 443.
 
-Este guia foi otimizado para servidores com apenas **1GB de RAM**. O processo de instalação usa técnicas especiais para evitar travamentos.
+## ✅ Pré-requisitos
 
-## Pré-requisitos
-- VPS Ubuntu com **mínimo 1GB RAM** + acesso root/sudo
+- VPS Ubuntu 24.04 com acesso root ou sudo
 - Node.js 20.x instalado
-- Domínio: con.devlima.wtf apontando para o IP da VPS
-- Certificados SSL já configurados em `/etc/letsencrypt/live/con.devlima.wtf/`
+- Domínio apontando para a VPS (ex.: `con.devlima.wtf`)
+- Certificados Let's Encrypt opcionais em `/etc/letsencrypt/live/<domínio>/`
+- Usuário `ubuntu` com diretório `/home/ubuntu/BANCO_DATA` gravável (criado automaticamente pelo app)
 
-## Passo 1: Instalar Dependências no Servidor
+## 1. Preparar o servidor
 
-\`\`\`bash
-# Atualizar sistema
+```bash
+# Atualize o sistema
 sudo apt update && sudo apt upgrade -y
 
-# Instalar Node.js 20.x
+# Instale dependências de build essenciais (útil para alguns pacotes npm)
+sudo apt install -y build-essential curl
+
+# Instale Node.js 20.x
 curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
 sudo apt install -y nodejs
 
-# Instalar PM2 globalmente
-sudo npm install -g pm2
-
-# Verificar instalações
-node --version  # Deve mostrar v20.x.x
+# Verifique versões
+node --version   # v20.x
 npm --version
-pm2 --version
-\`\`\`
+```
 
-## Passo 2: Preparar o Projeto
+### (Opcional) Conceder acesso às portas 80/443
 
-\`\`\`bash
-# Criar diretório para o projeto
-sudo mkdir -p /var/www/limabank
-sudo chown -R $USER:$USER /var/www/limabank
+```bash
+sudo setcap 'cap_net_bind_service=+ep' "$(command -v node)"
+sudo getcap "$(command -v node)"  # deve exibir cap_net_bind_service+ep
+```
 
-# Navegar para o diretório
-cd /var/www/limabank
+## 2. Obter o projeto
 
-# Fazer upload dos arquivos do projeto
-# (use scp, rsync, git clone, etc.)
-\`\`\`
+```bash
+# Caminho sugerido pelo cliente
+sudo mkdir -p /home/ubuntu/LIMABANK
+sudo chown -R $USER:$USER /home/ubuntu/LIMABANK
+cd /home/ubuntu/LIMABANK
 
-## Passo 3: Instalar Dependências (IMPORTANTE para 1GB RAM)
+git clone <seu-repositorio> .
+```
 
-### Opção A: Script Automático com Swap (RECOMENDADO)
+> Caso esteja atualizando uma instalação existente, basta atualizar o diretório e executar novamente `npm install`.
 
-\`\`\`bash
-cd /var/www/limabank
+## 3. Instalar dependências com pouca RAM
 
-# Dar permissão de execução ao script
-chmod +x install-with-swap.sh
+Para evitar estouro de memória em VPS com 1 GB, é recomendado utilizar swap temporário durante a instalação.
 
-# Executar script como root
-sudo bash install-with-swap.sh
-\`\`\`
-
-O script irá:
-1. Criar swap temporário de 2GB
-2. Instalar dependências de forma otimizada
-3. Fazer build do projeto
-4. Perguntar se deseja manter o swap permanente
-
-### Opção B: Manual com Swap Temporário
-
-\`\`\`bash
-# Criar swap de 2GB
+```bash
+# Criar swap temporário de 2 GB
 sudo fallocate -l 2G /swapfile
 sudo chmod 600 /swapfile
 sudo mkswap /swapfile
 sudo swapon /swapfile
 
-# Verificar swap ativo
+# Conferir
 free -h
 
-# Instalar dependências com flags otimizadas
-npm ci --prefer-offline --no-audit --progress=false
+# Instalar dependências
+npm install --no-progress
 
-# Build do projeto
-npm run build
-
-# Remover swap temporário (opcional)
+# (opcional) Remover swap temporário
 sudo swapoff /swapfile
 sudo rm /swapfile
-\`\`\`
+```
 
-### Opção C: Build Local (Melhor para RAM muito limitada)
+## 4. Compilar e iniciar o serviço
 
-Se mesmo com swap o servidor travar, faça o build localmente:
+O comando `npm start` recompila o front-end com Vite e inicia o servidor Express na sequência. Execute-o dentro de uma sessão `screen` ou `tmux` para manter o processo ativo após desconexões.
 
-\`\`\`bash
-# No seu computador local:
-npm install
-npm run build
+```bash
+cd /home/ubuntu/LIMABANK
 
-# Fazer upload apenas dos arquivos necessários:
-# - .next/
-# - public/
-# - node_modules/
-# - server.js
-# - ecosystem.config.js
-# - package.json
+# Compila e inicia (porta 80 e 443)
+npm start
+```
 
-# Na VPS, apenas inicie:
-pm2 start ecosystem.config.js
-\`\`\`
+Dentro de uma sessão `screen`:
 
-## Passo 4: Configurar Swap Permanente (Recomendado)
+```bash
+screen -S limabank
+npm start
+# Para desconectar sem encerrar: Ctrl + A, depois D
+```
 
-Para evitar problemas futuros, mantenha o swap ativo:
+## 5. Estrutura de persistência
 
-\`\`\`bash
-# Criar swap de 2GB
-sudo fallocate -l 2G /swapfile
-sudo chmod 600 /swapfile
-sudo mkswap /swapfile
-sudo swapon /swapfile
+- Todos os dados de usuários são gravados em `/home/ubuntu/BANCO_DATA`
+- O diretório é criado automaticamente na primeira requisição
+- Cada usuário recebe arquivos `finance-<userId>.json` com contas e transações
+- Credenciais ficam armazenadas em `auth.json` no mesmo diretório
 
-# Tornar permanente
-echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
+Faça backups periódicos desse diretório para preservar o histórico financeiro.
 
-# Otimizar uso de swap (usar apenas quando necessário)
-echo 'vm.swappiness=10' | sudo tee -a /etc/sysctl.conf
-sudo sysctl -p
+## 6. Variáveis de ambiente importantes
 
-# Verificar
-free -h
-\`\`\`
+| Variável            | Descrição                                                                                  |
+|--------------------|----------------------------------------------------------------------------------------------|
+| `PORT`             | Porta HTTP (padrão 80)                                                                       |
+| `HTTP_PORT`        | Porta HTTP alternativa                                                                       |
+| `HTTPS_PORT`       | Porta HTTPS (padrão 443)                                                                     |
+| `HTTPS_CERT_PATH`  | Caminho do certificado TLS (padrão `/etc/letsencrypt/live/con.devlima.wtf/fullchain.pem`)    |
+| `HTTPS_KEY_PATH`   | Caminho da chave privada TLS (padrão `/etc/letsencrypt/live/con.devlima.wtf/privkey.pem`)    |
 
-## Passo 5: Configurar Permissões para Portas 80 e 443
+Para executar apenas em HTTP, basta não definir (ou remover) os certificados.
 
-\`\`\`bash
-# Dar permissão ao Node.js para usar portas privilegiadas
-sudo setcap 'cap_net_bind_service=+ep' $(which node)
+## 7. Atualizações futuras
 
-# Verificar
-getcap $(which node)
-# Deve mostrar: /usr/bin/node = cap_net_bind_service+ep
-\`\`\`
+Quando houver uma nova versão do sistema:
 
-## Passo 6: Iniciar Aplicação
+```bash
+cd /home/ubuntu/LIMABANK
+git pull
+npm install --no-progress
+npm start
+```
 
-\`\`\`bash
-cd /var/www/limabank
-
-# Iniciar com PM2
-pm2 start ecosystem.config.js
-
-# Salvar configuração
-pm2 save
-
-# Configurar para iniciar no boot
-pm2 startup
-# Execute o comando sugerido pelo PM2
-
-# Verificar status
-pm2 status
-pm2 logs limabank --lines 50
-\`\`\`
-
-## Passo 7: Configurar Firewall
-
-\`\`\`bash
-# Permitir tráfego necessário
-sudo ufw allow 80/tcp
-sudo ufw allow 443/tcp
-sudo ufw allow 22/tcp  # SSH - NÃO ESQUEÇA!
-
-# Ativar firewall
-sudo ufw enable
-
-# Verificar
-sudo ufw status
-\`\`\`
-
-## Passo 8: Verificar Funcionamento
-
-\`\`\`bash
-# Verificar portas
-sudo netstat -tlnp | grep node
-
-# Testar HTTP (deve redirecionar para HTTPS)
-curl -I http://con.devlima.wtf
-
-# Testar HTTPS
-curl -I https://con.devlima.wtf
-
-# Ver logs
-pm2 logs limabank
-\`\`\`
-
-## Otimizações para 1GB RAM
-
-### Limitar Memória do PM2
-
-\`\`\`bash
-# Editar ecosystem.config.js para limitar memória
-pm2 start ecosystem.config.js --max-memory-restart 800M
-pm2 save
-\`\`\`
-
-### Monitorar Uso de Memória
-
-\`\`\`bash
-# Ver uso em tempo real
-pm2 monit
-
-# Ver uso de memória do sistema
-free -h
-htop  # (instale com: sudo apt install htop)
-\`\`\`
-
-### Limpar Cache Regularmente
-
-\`\`\`bash
-# Limpar cache do npm
-npm cache clean --force
-
-# Limpar logs antigos do PM2
-pm2 flush
-\`\`\`
-
-## Comandos Úteis
-
-### Gerenciar Aplicação
-
-\`\`\`bash
-# Ver logs
-pm2 logs limabank --lines 100
-
-# Reiniciar
-pm2 restart limabank
-
-# Parar
-pm2 stop limabank
-
-# Status
-pm2 status
-
-# Monitorar
-pm2 monit
-\`\`\`
-
-### Atualizar Aplicação
-
-\`\`\`bash
-cd /var/www/limabank
-
-# Parar aplicação
-pm2 stop limabank
-
-# Atualizar código (git pull, upload, etc.)
-
-# Se package.json mudou, reinstalar com swap:
-sudo bash install-with-swap.sh
-
-# Ou apenas rebuild:
-npm run build
-
-# Reiniciar
-pm2 restart limabank
-\`\`\`
-
-## Troubleshooting
-
-### Servidor Travou Durante npm install
-
-\`\`\`bash
-# Reiniciar servidor
-sudo reboot
-
-# Após reiniciar, usar o script com swap:
-cd /var/www/limabank
-sudo bash install-with-swap.sh
-\`\`\`
-
-### Erro de Memória
-
-\`\`\`bash
-# Verificar memória disponível
-free -h
-
-# Verificar swap
-swapon --show
-
-# Se não tiver swap, criar:
-sudo fallocate -l 2G /swapfile
-sudo chmod 600 /swapfile
-sudo mkswap /swapfile
-sudo swapon /swapfile
-\`\`\`
-
-### Aplicação Travando
-
-\`\`\`bash
-# Verificar uso de memória
-pm2 monit
-
-# Limitar memória e reiniciar automaticamente
-pm2 delete limabank
-pm2 start ecosystem.config.js --max-memory-restart 800M
-pm2 save
-\`\`\`
-
-### Build Falhando
-
-\`\`\`bash
-# Opção 1: Aumentar swap temporariamente
-sudo fallocate -l 4G /swapfile2
-sudo chmod 600 /swapfile2
-sudo mkswap /swapfile2
-sudo swapon /swapfile2
-
-npm run build
-
-sudo swapoff /swapfile2
-sudo rm /swapfile2
-
-# Opção 2: Fazer build localmente e fazer upload
-\`\`\`
-
-## Renovação de Certificados SSL
-
-\`\`\`bash
-# Renovar certificados
-sudo certbot renew
-
-# Reiniciar aplicação
-pm2 restart limabank
-
-# Automatizar (adicionar ao crontab)
-sudo crontab -e
-# Adicione: 0 3 1 * * certbot renew --quiet && pm2 restart limabank
-\`\`\`
-
-## Monitoramento de Recursos
-
-### Script de Monitoramento
-
-Crie um script para alertar sobre uso alto de memória:
-
-\`\`\`bash
-sudo nano /usr/local/bin/check-memory.sh
-\`\`\`
-
-Adicione:
-
-\`\`\`bash
-#!/bin/bash
-THRESHOLD=90
-MEMORY_USAGE=$(free | grep Mem | awk '{print ($3/$2) * 100.0}' | cut -d. -f1)
-
-if [ $MEMORY_USAGE -gt $THRESHOLD ]; then
-    echo "ALERTA: Uso de memória em ${MEMORY_USAGE}%"
-    pm2 restart limabank
-fi
-\`\`\`
-
-\`\`\`bash
-# Dar permissão
-sudo chmod +x /usr/local/bin/check-memory.sh
-
-# Adicionar ao cron (verificar a cada 5 minutos)
-crontab -e
-# Adicione: */5 * * * * /usr/local/bin/check-memory.sh
-\`\`\`
-
-## Acesso
-
-Após completar todos os passos:
-
-- **HTTP**: http://con.devlima.wtf (redireciona para HTTPS)
-- **HTTPS**: https://con.devlima.wtf
-
-## Arquitetura
-
-\`\`\`
-Internet (porta 80/443)
-         ↓
-    Node.js Server (server.js)
-         ↓
-    Next.js Application
-         ↓
-    localStorage (dados do usuário)
-\`\`\`
-
-**Sem nginx, sem proxy reverso - Node.js serve diretamente!**
-
-## Checklist de Deploy
-
-- [ ] Node.js 20.x instalado
-- [ ] PM2 instalado globalmente
-- [ ] Swap de 2GB configurado
-- [ ] Arquivos do projeto em `/var/www/limabank`
-- [ ] Dependências instaladas com `install-with-swap.sh`
-- [ ] Build concluído com sucesso
-- [ ] Permissões setcap configuradas
-- [ ] PM2 iniciado e salvo
-- [ ] PM2 startup configurado
-- [ ] Firewall configurado (80, 443, 22)
-- [ ] Site acessível via HTTPS
-- [ ] Certificados SSL funcionando
-- [ ] Logs sem erros
+> Recomenda-se parar a sessão anterior (Ctrl + C dentro do `screen`) antes de iniciar novamente para evitar processos duplicados.
 
 ---
 
-**Desenvolvido por DevLima Soluções**
+Pronto! O LimaBank estará disponível nas portas 80/443 respondendo diretamente pelo Node.js, sem necessidade de Nginx ou PM2.

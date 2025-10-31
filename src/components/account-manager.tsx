@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { CreditCard, Building2, Plus, Trash2 } from "lucide-react"
-import type { Account } from "@/lib/finance-storage"
+import type { Account } from "@/lib/api-client"
 
 interface AccountManagerProps {
   accounts: Account[]
@@ -64,14 +64,14 @@ export function AccountManager({ accounts, onAdd, onDelete }: AccountManagerProp
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <CardTitle>Contas e Cartões</CardTitle>
-          <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild>
-              <Button size="sm">
-                <Plus className="h-4 w-4 mr-2" />
-                Adicionar
-              </Button>
+            <Dialog open={open} onOpenChange={setOpen}>
+              <DialogTrigger asChild>
+                <Button size="sm" className="w-full md:w-auto">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Adicionar
+                </Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
@@ -116,7 +116,7 @@ export function AccountManager({ accounts, onAdd, onDelete }: AccountManagerProp
 
                 <div className="space-y-2">
                   <Label>Cor</Label>
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap gap-2">
                     {ACCOUNT_COLORS.map((c) => (
                       <button
                         key={c}
@@ -145,9 +145,9 @@ export function AccountManager({ accounts, onAdd, onDelete }: AccountManagerProp
             {accounts.map((account) => (
               <div
                 key={account.id}
-                className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors"
+                className="flex flex-col gap-4 p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors md:flex-row md:items-center md:justify-between"
               >
-                <div className="flex items-center gap-3">
+                <div className="flex w-full items-center gap-3 md:w-auto">
                   <div
                     className="h-10 w-10 rounded-lg flex items-center justify-center"
                     style={{ backgroundColor: account.color }}
@@ -164,7 +164,7 @@ export function AccountManager({ accounts, onAdd, onDelete }: AccountManagerProp
                   </div>
                 </div>
 
-                <div className="flex items-center gap-3">
+                <div className="flex w-full items-center justify-between gap-3 md:w-auto md:justify-end">
                   <span className={`font-semibold ${account.balance >= 0 ? "text-primary" : "text-destructive"}`}>
                     {formatCurrency(account.balance)}
                   </span>
@@ -172,7 +172,7 @@ export function AccountManager({ accounts, onAdd, onDelete }: AccountManagerProp
                     variant="ghost"
                     size="icon"
                     onClick={() => onDelete(account.id)}
-                    className="text-muted-foreground hover:text-destructive"
+                    className="text-muted-foreground hover:text-destructive self-start md:self-auto"
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>

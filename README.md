@@ -6,186 +6,109 @@ Sistema completo de gestão financeira pessoal desenvolvido por **DevLima Soluç
 
 ## 📋 Sobre o Projeto
 
-LimaBank é uma aplicação web Progressive Web App (PWA) que permite aos usuários gerenciar suas finanças pessoais de forma simples e eficiente. Com interface moderna e intuitiva, o sistema oferece controle total sobre receitas, despesas, cartões e contas bancárias.
+LimaBank é uma aplicação web responsiva que permite aos usuários gerenciar suas finanças pessoais de forma simples e eficiente. O sistema entrega controle total sobre receitas, despesas, cartões e contas bancárias, mantendo cada usuário isolado em seus próprios arquivos de dados no servidor.
 
 ## ✨ Funcionalidades
 
-- 🔐 **Sistema de Autenticação**: Login e registro de usuários com senha
-- 💳 **Gestão de Cartões e Bancos**: Adicione e gerencie múltiplos cartões e contas bancárias
-- 💰 **Controle de Transações**: Registre receitas e despesas vinculadas a cartões/bancos específicos
-- 📊 **Dashboard Completo**: Visualize resumos financeiros com gráficos e estatísticas
-- 📈 **Gráficos por Categoria**: Análise visual de gastos por categoria
-- 🌓 **Modo Escuro**: Interface adaptável com tema claro e escuro
-- 💾 **Armazenamento Local**: Todos os dados salvos localmente no navegador
-- 📱 **PWA**: Instale como aplicativo no celular ou desktop
-- ⚡ **Saldos Negativos**: Suporte para contas e cartões com saldo negativo
-- 📤 **Exportação de Dados**: Exporte seus dados financeiros em JSON
+- 🔐 **Autenticação**: Registro e login com credenciais individuais
+- 💳 **Gestão de Contas e Cartões**: Cadastre saldos iniciais, tipos e cores personalizadas
+- 💰 **Controle de Transações**: Registre receitas e despesas com múltiplas formas de pagamento
+- 📊 **Dashboard Completo**: Resumo financeiro, gráfico por categoria e histórico detalhado
+- 📈 **Exportação em PDF**: Gere relatórios completos com contas e movimentos
+- 🕒 **Datas em Brasília**: Todos os registros são normalizados para o fuso de Brasília
+- 🌓 **Tema Dinâmico**: Alternância entre modo claro e escuro com persistência local
+- 📱 **PWA**: Pode ser instalado como aplicativo em desktop e dispositivos móveis
 
 ## 🚀 Tecnologias
 
-- **Framework**: Next.js 16 (App Router)
-- **UI**: React 19 + Tailwind CSS 4
-- **Componentes**: shadcn/ui + Radix UI
-- **Gráficos**: Recharts
-- **Ícones**: Lucide React
-- **Temas**: next-themes
-- **Formulários**: React Hook Form + Zod
-- **TypeScript**: Tipagem completa
+- **Front-end**: React 19 + Vite + Tailwind CSS 4
+- **Componentes**: shadcn/ui + Radix UI + Recharts
+- **Gerenciamento de estado**: SWR para sincronização automática dos dados
+- **Back-end**: Express 4 servindo APIs REST e arquivos estáticos
+- **Persistência**: Arquivos JSON por usuário em `/home/ubuntu/BANCO_DATA`
+- **Tipagem**: TypeScript end-to-end
 
-## 📦 Instalação Local
+## 📦 Instalação e Execução
 
 ### Pré-requisitos
 
-- Node.js 18+ 
-- npm ou pnpm
+- Node.js 18+
+- npm 9+
 
 ### Passos
 
-\`\`\`bash
+```bash
 # Clone o repositório
 git clone <seu-repositorio>
-cd limabank
+cd Limabank
 
 # Instale as dependências
 npm install
 
-# Execute em modo desenvolvimento
+# Compile e inicie o servidor HTTP/HTTPS (porta 80/443)
+npm start
+```
+
+O comando `npm start` recompila o front-end com Vite e inicia o servidor Express, que por padrão escuta em `0.0.0.0:80` e tenta habilitar HTTPS em `0.0.0.0:443` utilizando certificados de `/etc/letsencrypt/live/con.devlima.wtf/` (personalizáveis via variáveis de ambiente `HTTPS_CERT_PATH` e `HTTPS_KEY_PATH`).
+
+### Desenvolvimento
+
+Para desenvolvimento de interface, utilize o servidor Vite:
+
+```bash
 npm run dev
+```
 
-# Acesse http://localhost:3000
-\`\`\`
-
-## 🌐 Deploy em Produção
-
-O projeto está configurado para deploy em VPS Ubuntu com Nginx e PM2.
-
-### Acesso em Produção
-
-- **URL**: https://con.devlima.wtf
-- **Portas**: 80 (HTTP) e 443 (HTTPS)
-- **SSL**: Let's Encrypt
-
-### Guia Completo de Deploy
-
-Consulte o arquivo [DEPLOY.md](DEPLOY.md) para instruções detalhadas de como fazer o deploy em uma VPS Ubuntu.
-
-### Deploy Rápido
-
-\`\`\`bash
-# Na VPS, execute:
-cd /var/www/limabank
-./deploy.sh
-\`\`\`
-
-## 📱 PWA - Progressive Web App
-
-O LimaBank pode ser instalado como aplicativo:
-
-### No Desktop (Chrome/Edge)
-1. Acesse https://con.devlima.wtf
-2. Clique no ícone de instalação na barra de endereços
-3. Clique em "Instalar"
-
-### No Mobile (Android/iOS)
-1. Acesse https://con.devlima.wtf
-2. Abra o menu do navegador
-3. Selecione "Adicionar à tela inicial"
-
-## 🎨 Recursos Visuais
-
-- **Logo**: Design futurista com elementos de segurança e tecnologia
-- **Cores**: Paleta verde e azul escuro com acentos ciano
-- **Tipografia**: Fontes modernas e legíveis
-- **Responsivo**: Funciona perfeitamente em desktop, tablet e mobile
-
-## 🔒 Segurança
-
-- Autenticação local com hash de senhas
-- Dados armazenados apenas no navegador do usuário
-- Sem envio de dados para servidores externos
-- HTTPS obrigatório em produção
-- Headers de segurança configurados no Nginx
-
-## 📊 Estrutura de Dados
-
-Os dados são armazenados em localStorage no formato JSON:
-
-\`\`\`json
-{
-  "users": {
-    "username": {
-      "password": "hashed_password",
-      "accounts": [...],
-      "transactions": [...]
-    }
-  }
-}
-\`\`\`
-
-## 🛠️ Scripts Disponíveis
-
-\`\`\`bash
-# Desenvolvimento
-npm run dev
-
-# Build de produção
-npm run build
-
-# Iniciar em produção
-npm run start
-
-# Lint
-npm run lint
-
-# Deploy (com PM2)
-npm run deploy
-\`\`\`
+> ⚠️ O servidor de desenvolvimento não expõe as rotas de API. Para testar o fluxo completo em ambiente local, execute `npm start` (que compila e sobe o Express) após realizar `npm run build`.
 
 ## 📁 Estrutura do Projeto
 
-\`\`\`
+```
 limabank/
-├── app/                    # Páginas Next.js
-│   ├── layout.tsx         # Layout principal
-│   ├── page.tsx           # Página inicial/dashboard
-│   └── globals.css        # Estilos globais
-├── components/            # Componentes React
-│   ├── ui/               # Componentes shadcn/ui
-│   ├── login-page.tsx    # Tela de login
-│   ├── account-manager.tsx
-│   ├── transaction-form.tsx
-│   └── ...
-├── lib/                   # Utilitários
-│   ├── auth-storage.ts   # Gerenciamento de autenticação
-│   ├── finance-storage.ts # Gerenciamento de dados financeiros
-│   └── utils.ts          # Funções auxiliares
-├── public/               # Arquivos estáticos
-│   ├── logo.png         # Logo do LimaBank
-│   ├── manifest.json    # Manifest PWA
-│   └── sw.js           # Service Worker
-├── DEPLOY.md           # Guia de deploy
-├── nginx.conf          # Configuração Nginx
-├── ecosystem.config.js # Configuração PM2
-└── deploy.sh          # Script de deploy
-\`\`\`
+├── public/                 # Assets estáticos e manifest PWA
+├── server/                 # Utilitários do back-end (armazenamento e timezone)
+├── server.js               # Servidor Express (HTTP/HTTPS) + APIs REST
+├── src/
+│   ├── App.tsx             # Dashboard principal
+│   ├── components/         # Componentes React (shadcn/ui + telas)
+│   ├── lib/                # Clientes de API e utilitários de fuso horário
+│   └── styles/globals.css  # Estilos globais e tokens CSS
+├── index.html              # Entrada do Vite
+├── package.json            # Scripts e dependências
+└── vite.config.ts          # Configuração do bundler
+```
 
-## 🤝 Suporte
+## 🛠️ Scripts Disponíveis
 
-Para suporte técnico ou dúvidas:
+```bash
+npm run dev    # Inicia o Vite para desenvolvimento do front-end
+npm run build  # Gera a versão de produção do front-end em dist/
+npm start      # Compila e inicia o servidor Express (HTTP 80 / HTTPS 443)
+npm run lint   # Verifica o código com ESLint
+```
 
-- **Email**: contato@devlima.wtf
-- **Website**: https://devlima.wtf
+## 🔒 Segurança & Persistência
 
-## 📄 Licença
+- Dados financeiros e credenciais são gravados por usuário em arquivos JSON no diretório `/home/ubuntu/BANCO_DATA`
+- Os arquivos são criados automaticamente se não existirem
+- O servidor aplica cabeçalhos de segurança via `helmet`
+- O processo Node opera fixado no fuso horário `America/Sao_Paulo`
+- HTTPS é habilitado automaticamente quando os certificados válidos estão disponíveis
 
-Propriedade de DevLima Soluções. Todos os direitos reservados.
+## 📄 Exportação em PDF
 
-## 👨‍💻 Desenvolvido por
+Os relatórios PDF incluem:
 
-**DevLima Soluções**
+- Listagem de contas com tipo e saldo atual
+- Todas as transações, com data/hora formatadas para Brasília e detalhamento das formas de pagamento
+- Totais de receitas, despesas e saldo consolidado
 
-Sistema de gestão financeira pessoal moderno e eficiente.
+## 📱 Instalação como PWA
+
+1. Acesse a aplicação em produção
+2. No navegador (Chrome/Edge), clique no ícone de instalação na barra de endereços
+3. No mobile, utilize “Adicionar à tela inicial” para instalar como app standalone
 
 ---
 
-© 2025 DevLima Soluções - LimaBank
+Desenvolvido por **DevLima Soluções**.

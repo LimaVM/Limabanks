@@ -2,14 +2,13 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ArrowUpCircle, ArrowDownCircle, Wallet, CreditCard } from "lucide-react"
-import type { Transaction, Account } from "@/lib/finance-storage"
+import type { Account } from "@/lib/api-client"
 
 interface SummaryCardsProps {
-  transactions: Transaction[]
-  accounts: Account[] // Adicionando accounts para calcular saldos
+  accounts: Account[]
 }
 
-export function SummaryCards({ transactions, accounts }: SummaryCardsProps) {
+export function SummaryCards({ accounts }: SummaryCardsProps) {
   const totalBanksBalance = accounts.filter((a) => a.type === "bank").reduce((sum, a) => sum + a.balance, 0)
 
   const totalCardsBalance = accounts.filter((a) => a.type === "card").reduce((sum, a) => sum + a.balance, 0)
@@ -26,7 +25,7 @@ export function SummaryCards({ transactions, accounts }: SummaryCardsProps) {
   }
 
   return (
-    <div className="grid gap-4 md:grid-cols-4">
+    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Saldo Bancos</CardTitle>
