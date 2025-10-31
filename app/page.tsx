@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import useSWR, { mutate } from "swr"
 import { TransactionForm } from "@/components/transaction-form"
 import { SummaryCards } from "@/components/summary-cards"
@@ -24,8 +24,34 @@ import {
 } from "@/lib/api-client"
 
 export default function FinancePage() {
-  const [userId, setUserId] = useState<string | null>(null)
-  const [userEmail, setUserEmail] = useState<string | null>(null)
+  const [userId, setUserId] = useState<string | null>(() => {
+    if (typeof window === "undefined") {
+      return null
+    }
+
+    const savedUserId = localStorage.getItem("userId")
+    const savedEmail = localStorage.getItem("userEmail")
+
+    if (savedUserId && savedEmail) {
+      return savedUserId
+    }
+
+    return null
+  })
+  const [userEmail, setUserEmail] = useState<string | null>(() => {
+    if (typeof window === "undefined") {
+      return null
+    }
+
+    const savedUserId = localStorage.getItem("userId")
+    const savedEmail = localStorage.getItem("userEmail")
+
+    if (savedUserId && savedEmail) {
+      return savedEmail
+    }
+
+    return null
+  })
 
   const { data, error, isLoading } = useSWR(
     userId ? `/api/finance/${userId}` : null,
@@ -39,17 +65,6 @@ export default function FinancePage() {
 
   const transactions = data?.transactions || []
   const accounts = data?.accounts || []
-
-  useEffect(() => {
-    // Verificar se há sessão salva
-    const savedUserId = localStorage.getItem("userId")
-    const savedEmail = localStorage.getItem("userEmail")
-
-    if (savedUserId && savedEmail) {
-      setUserId(savedUserId)
-      setUserEmail(savedEmail)
-    }
-  }, [])
 
   const handleLogin = (id: string, email: string) => {
     setUserId(id)
