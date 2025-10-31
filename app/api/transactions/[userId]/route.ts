@@ -1,32 +1,60 @@
 import { NextResponse } from "next/server"
-import { readJSON, writeJSON, type FinanceData, type Transaction } from "@/lib/server-storage"
+import { readJSON, writeJSON, type FinanceData, type Transaction, type TransactionPayment } from "@/lib/server-storage"
 
 export async function POST(request: Request, { params }: { params: { userId: string } }) {
   try {
     const { userId } = params
     const transactionData = await request.json()
 
+    if (!transactionData?.occurredAt || !transactionData?.payments || !Array.isArray(transactionData.payments)) {
+      return NextResponse.json({ error: "Dados da transação inválidos" }, { status: 400 })
+    }
+
+    const normalizedPayments: TransactionPayment[] = transactionData.payments
+      .map((payment: TransactionPayment) => ({
+        accountId: payment.accountId,
+        amount: Number(payment.amount) || 0,
+      }))
+      .filter((payment) => payment.accountId && payment.amount > 0)
+
+    if (normalizedPayments.length === 0) {
+      return NextResponse.json({ error: "Pelo menos uma forma de pagamento é necessária" }, { status: 400 })
+    }
+
     const data = readJSON<FinanceData>(`finance-${userId}.json`, {
       transactions: [],
       accounts: [],
     })
 
+    const totalPayments = normalizedPayments.reduce((sum, payment) => sum + payment.amount, 0)
+    const totalAmount = Number(transactionData.amount) || 0
+
+    if (Math.abs(totalPayments - totalAmount) > 0.01) {
+      return NextResponse.json(
+        { error: "A soma das formas de pagamento deve ser igual ao valor total" },
+        { status: 400 },
+      )
+    }
+
     const newTransaction: Transaction = {
       ...transactionData,
+      amount: totalAmount,
+      payments: normalizedPayments,
       id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
     }
 
     data.transactions.push(newTransaction)
 
-    // Atualizar saldo da conta
-    const account = data.accounts.find((a) => a.id === transactionData.accountId)
-    if (account) {
-      if (transactionData.type === "income") {
-        account.balance += transactionData.amount
-      } else {
-        account.balance -= transactionData.amount
+    newTransaction.payments.forEach((payment) => {
+      const account = data.accounts.find((a) => a.id === payment.accountId)
+      if (account) {
+        if (transactionData.type === "income") {
+          account.balance += payment.amount
+        } else {
+          account.balance -= payment.amount
+        }
       }
-    }
+    })
 
     writeJSON(`finance-${userId}.json`, data)
 
@@ -52,21 +80,24 @@ export async function DELETE(request: Request, { params }: { params: { userId: s
       accounts: [],
     })
 
-    const transaction = data.transactions.find((t) => t.id === transactionId)
+    const transactionIndex = data.transactions.findIndex((t) => t.id === transactionId)
 
-    if (transaction) {
-      // Reverter saldo da conta
-      const account = data.accounts.find((a) => a.id === transaction.accountId)
-      if (account) {
-        if (transaction.type === "income") {
-          account.balance -= transaction.amount
-        } else {
-          account.balance += transaction.amount
-        }
-      }
+    if (transactionIndex === -1) {
+      return NextResponse.json({ error: "Transação não encontrada" }, { status: 404 })
     }
 
-    data.transactions = data.transactions.filter((t) => t.id !== transactionId)
+    const [transaction] = data.transactions.splice(transactionIndex, 1)
+
+    transaction.payments.forEach((payment) => {
+      const account = data.accounts.find((a) => a.id === payment.accountId)
+      if (account) {
+        if (transaction.type === "income") {
+          account.balance -= payment.amount
+        } else {
+          account.balance += payment.amount
+        }
+      }
+    })
     writeJSON(`finance-${userId}.json`, data)
 
     return NextResponse.json({ success: true })

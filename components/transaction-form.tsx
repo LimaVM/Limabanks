@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { PlusCircle, Plus, Trash2 } from "lucide-react"
-import type { Account, TransactionPayment } from "@/lib/finance-storage"
+import type { Account, TransactionPayment } from "@/lib/api-client"
 
 interface TransactionFormProps {
   accounts: Account[]
@@ -17,7 +17,7 @@ interface TransactionFormProps {
     amount: number
     category: string
     description: string
-    date: string
+    occurredAt: string
     payments: TransactionPayment[] // Suporte para múltiplas formas de pagamento
   }) => void
 }
@@ -30,7 +30,7 @@ export function TransactionForm({ accounts, onAdd }: TransactionFormProps) {
   const [amount, setAmount] = useState("")
   const [category, setCategory] = useState("")
   const [description, setDescription] = useState("")
-  const [date, setDate] = useState(new Date().toISOString().split("T")[0])
+  const [occurredAt, setOccurredAt] = useState(() => new Date().toISOString().slice(0, 16))
 
   const [payments, setPayments] = useState<TransactionPayment[]>([{ accountId: "", amount: 0 }])
 
@@ -58,12 +58,19 @@ export function TransactionForm({ accounts, onAdd }: TransactionFormProps) {
       return
     }
 
+    const occurredAtDate = new Date(occurredAt)
+
+    if (Number.isNaN(occurredAtDate.getTime())) {
+      alert("Data e hora inválidas")
+      return
+    }
+
     onAdd({
       type,
       amount: totalAmount,
       category,
       description,
-      date,
+      occurredAt: occurredAtDate.toISOString(),
       payments: validPayments,
     })
 
@@ -71,7 +78,7 @@ export function TransactionForm({ accounts, onAdd }: TransactionFormProps) {
     setAmount("")
     setCategory("")
     setDescription("")
-    setDate(new Date().toISOString().split("T")[0])
+    setOccurredAt(new Date().toISOString().slice(0, 16))
     setPayments([{ accountId: "", amount: 0 }])
   }
 
@@ -203,8 +210,14 @@ export function TransactionForm({ accounts, onAdd }: TransactionFormProps) {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="date">Data</Label>
-            <Input id="date" type="date" value={date} onChange={(e) => setDate(e.target.value)} required />
+            <Label htmlFor="datetime">Data e hora</Label>
+            <Input
+              id="datetime"
+              type="datetime-local"
+              value={occurredAt}
+              onChange={(e) => setOccurredAt(e.target.value)}
+              required
+            />
           </div>
 
           <Button type="submit" className="w-full" disabled={accounts.length === 0}>

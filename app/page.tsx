@@ -11,14 +11,13 @@ import { LoginPage } from "@/components/login-page"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { Logo } from "@/components/logo"
 import { Button } from "@/components/ui/button"
-import { Download, Trash2, LogOut } from "lucide-react"
+import { Download, LogOut } from "lucide-react"
 import {
   getFinanceData,
   addAccount as apiAddAccount,
   deleteAccount as apiDeleteAccount,
   addTransaction as apiAddTransaction,
   deleteTransaction as apiDeleteTransaction,
-  clearAllData as apiClearAllData,
   type Transaction,
   type Account,
 } from "@/lib/api-client"
@@ -124,29 +123,91 @@ export default function FinancePage() {
     }
   }
 
-  const handleExportData = () => {
-    if (!data) return
-    const dataStr = JSON.stringify(data, null, 2)
-    const dataBlob = new Blob([dataStr], { type: "application/json" })
-    const url = URL.createObjectURL(dataBlob)
-    const link = document.createElement("a")
-    link.href = url
-    link.download = `financas-${new Date().toISOString().split("T")[0]}.json`
-    link.click()
-    URL.revokeObjectURL(url)
-  }
+  const handleExportData = async () => {
+    if (!data || !userEmail) return
 
-  const handleClearData = async () => {
-    if (!userId) return
-    if (confirm("Tem certeza que deseja apagar todos os dados? Esta ação não pode ser desfeita.")) {
-      try {
-        await apiClearAllData(userId)
-        mutate(`/api/finance/${userId}`) // Revalidar dados
-      } catch (error) {
-        console.error("Error clearing data:", error)
-        alert("Erro ao limpar dados")
-      }
+    const [{ jsPDF }, autoTableModule] = await Promise.all([
+      import("jspdf"),
+      import("jspdf-autotable"),
+    ])
+
+    const autoTable = autoTableModule.default
+    if (typeof autoTable !== "function") {
+      console.error("Módulo de exportação em PDF não pôde ser carregado")
+      alert("Não foi possível gerar o PDF no momento")
+      return
     }
+    const doc = new jsPDF()
+
+    const generatedAt = new Date()
+    const formattedDate = generatedAt.toLocaleString("pt-BR", {
+      dateStyle: "full",
+      timeStyle: "short",
+    })
+
+    const totalIncome = data.transactions
+      .filter((transaction) => transaction.type === "income")
+      .reduce((sum, transaction) => sum + transaction.amount, 0)
+
+    const totalExpense = data.transactions
+      .filter((transaction) => transaction.type === "expense")
+      .reduce((sum, transaction) => sum + transaction.amount, 0)
+
+    const formatCurrency = (value: number) =>
+      new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value)
+
+    doc.setFontSize(16)
+    doc.text("Relatório Financeiro Completo", 14, 20)
+
+    doc.setFontSize(11)
+    doc.text(`Usuário: ${userEmail}`, 14, 30)
+    doc.text(`Gerado em: ${formattedDate}`, 14, 36)
+    doc.text(`Receitas totais: ${formatCurrency(totalIncome)}`, 14, 42)
+    doc.text(`Despesas totais: ${formatCurrency(totalExpense)}`, 14, 48)
+    doc.text(`Saldo final: ${formatCurrency(totalIncome - totalExpense)}`, 14, 54)
+
+    autoTable(doc, {
+      startY: 62,
+      head: [["Contas", "Tipo", "Saldo Atual"]],
+      body: data.accounts.map((account) => [
+        account.name,
+        account.type === "bank" ? "Banco" : "Cartão",
+        formatCurrency(account.balance),
+      ]),
+      styles: { fontSize: 9 },
+    })
+
+    const transactionsStartY = (doc as any).lastAutoTable?.finalY ? (doc as any).lastAutoTable.finalY + 10 : 70
+
+    autoTable(doc, {
+      startY: transactionsStartY,
+      head: [["Data/Hora", "Tipo", "Categoria", "Descrição", "Valor", "Pagamentos"]],
+      body: data.transactions.map((transaction) => {
+        const payments = transaction.payments
+          .map((payment) => {
+            const account = data.accounts.find((acc) => acc.id === payment.accountId)
+            const accountName = account ? account.name : "Conta removida"
+            return `${accountName}: ${formatCurrency(payment.amount)}`
+          })
+          .join(" | ")
+
+        return [
+          new Date(transaction.occurredAt).toLocaleString("pt-BR", {
+            dateStyle: "short",
+            timeStyle: "short",
+          }),
+          transaction.type === "income" ? "Receita" : "Despesa",
+          transaction.category,
+          transaction.description || "-",
+          formatCurrency(transaction.amount),
+          payments || "Pagamentos não registrados",
+        ]
+      }),
+      styles: { fontSize: 8 },
+      headStyles: { fillColor: [16, 185, 129] },
+    })
+
+    doc.save(`relatorio-financeiro-${generatedAt.toISOString().split("T")[0]}.pdf`)
   }
 
   if (!userId) {
@@ -182,11 +243,7 @@ export default function FinancePage() {
             <div className="flex gap-2">
               <Button variant="outline" size="sm" onClick={handleExportData}>
                 <Download className="h-4 w-4 mr-2" />
-                Exportar
-              </Button>
-              <Button variant="outline" size="sm" onClick={handleClearData}>
-                <Trash2 className="h-4 w-4 mr-2" />
-                Limpar Tudo
+                Exportar PDF
               </Button>
               <Button variant="outline" size="sm" onClick={handleLogout}>
                 <LogOut className="h-4 w-4 mr-2" />

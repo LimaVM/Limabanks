@@ -3,7 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Trash2, ArrowUpCircle, ArrowDownCircle } from "lucide-react"
-import type { Transaction, Account } from "@/lib/finance-storage"
+import type { Transaction, Account } from "@/lib/api-client"
 
 interface TransactionsListProps {
   transactions: Transaction[]
@@ -19,8 +19,15 @@ export function TransactionsList({ transactions, accounts, onDelete }: Transacti
     }).format(value)
   }
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString + "T00:00:00").toLocaleDateString("pt-BR")
+  const formatDateTime = (isoDate: string) => {
+    const date = new Date(isoDate)
+    if (Number.isNaN(date.getTime())) {
+      return "Data inválida"
+    }
+    return date.toLocaleString("pt-BR", {
+      dateStyle: "short",
+      timeStyle: "short",
+    })
   }
 
   const getAccountName = (accountId: string) => {
@@ -29,8 +36,20 @@ export function TransactionsList({ transactions, accounts, onDelete }: Transacti
   }
 
   const sortedTransactions = [...transactions].sort((a, b) => {
-    return new Date(b.date).getTime() - new Date(a.date).getTime()
+    return new Date(b.occurredAt).getTime() - new Date(a.occurredAt).getTime()
   })
+
+  const getPaymentsSummary = (transaction: Transaction) => {
+    if (!transaction.payments || transaction.payments.length === 0) {
+      return "Pagamentos não registrados"
+    }
+
+    const details = transaction.payments
+      .map((payment) => `${getAccountName(payment.accountId)} (${formatCurrency(payment.amount)})`)
+      .join(" • ")
+
+    return `Pagamentos: ${details}`
+  }
 
   return (
     <Card>
@@ -57,12 +76,12 @@ export function TransactionsList({ transactions, accounts, onDelete }: Transacti
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="font-medium">{transaction.category}</span>
-                      <span className="text-xs text-muted-foreground">• {getAccountName(transaction.accountId)}</span>
-                      <span className="text-xs text-muted-foreground">• {formatDate(transaction.date)}</span>
+                      <span className="text-xs text-muted-foreground">• {formatDateTime(transaction.occurredAt)}</span>
                     </div>
                     {transaction.description && (
                       <p className="text-sm text-muted-foreground truncate">{transaction.description}</p>
                     )}
+                    <p className="text-xs text-muted-foreground mt-1">{getPaymentsSummary(transaction)}</p>
                   </div>
                 </div>
 

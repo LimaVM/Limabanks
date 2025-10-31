@@ -1,7 +1,7 @@
 import fs from "fs"
 import path from "path"
 
-const DATA_DIR = "/home/ubuntu/BANCO_APP"
+const DATA_DIR = "/home/ubuntu/LIMABANK/data"
 
 // Garantir que o diretório existe
 export function ensureDataDir() {
@@ -71,7 +71,7 @@ export interface Transaction {
   amount: number
   category: string
   description: string
-  date: string
+  occurredAt: string
   payments: TransactionPayment[]
 }
 

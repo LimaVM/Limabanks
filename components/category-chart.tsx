@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts"
-import type { Transaction } from "@/lib/finance-storage"
+import type { Transaction } from "@/lib/api-client"
 
 interface CategoryChartProps {
   transactions: Transaction[]

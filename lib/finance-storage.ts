@@ -17,7 +17,7 @@ export interface Transaction {
   amount: number
   category: string
   description: string
-  date: string
+  occurredAt: string
   payments: TransactionPayment[] // Agora suporta múltiplas formas de pagamento
 }
 

@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ArrowUpCircle, ArrowDownCircle, Wallet, CreditCard } from "lucide-react"
-import type { Transaction, Account } from "@/lib/finance-storage"
+import type { Transaction, Account } from "@/lib/api-client"
 
 interface SummaryCardsProps {
   transactions: Transaction[]

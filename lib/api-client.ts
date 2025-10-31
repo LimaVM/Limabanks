@@ -24,7 +24,7 @@ export interface Transaction {
   amount: number
   category: string
   description: string
-  date: string
+  occurredAt: string
   payments: TransactionPayment[]
 }
 
@@ -122,20 +122,6 @@ export async function deleteTransaction(userId: string, transactionId: string) {
 
   if (!res.ok) {
     throw new Error("Erro ao deletar transação")
-  }
-
-  return res.json()
-}
-
-export async function clearAllData(userId: string) {
-  const res = await fetch(`/api/finance/${userId}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ transactions: [], accounts: [] }),
-  })
-
-  if (!res.ok) {
-    throw new Error("Erro ao limpar dados")
   }
 
   return res.json()
