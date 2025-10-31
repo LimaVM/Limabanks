@@ -119,7 +119,14 @@
   * {
     @apply border-border outline-ring/50;
   }
+  html {
+    @apply overflow-x-hidden;
+  }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground overflow-x-hidden;
+  }
+  nextjs-portal [class*="dev-tools-indicator"],
+  nextjs-portal [data-nextjs-toast] {
+    display: none !important;
   }
 }

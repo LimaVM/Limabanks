@@ -1,7 +1,7 @@
 import fs from "fs"
 import path from "path"
 
-const DATA_DIR = "/home/ubuntu/LIMABANK/data"
+const DATA_DIR = "/home/ubuntu/BANCO_DATA"
 
 // Garantir que o diretório existe
 export function ensureDataDir() {

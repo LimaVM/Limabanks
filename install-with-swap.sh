@@ -3,6 +3,7 @@ set -euo pipefail
 
 # Variáveis de configuração
 APP_DIR="/home/ubuntu/LIMABANK"
+DATA_DIR="/home/ubuntu/BANCO_DATA"
 SWAPFILE="/swapfile"
 SWAP_SIZE_GB=2
 NODE_MAJOR=20
@@ -30,6 +31,14 @@ ensure_directory() {
   if [[ ! -d "$APP_DIR" ]]; then
     error "Diretório do projeto não encontrado em $APP_DIR"
     exit 1
+  fi
+}
+
+ensure_data_directory() {
+  if [[ ! -d "$DATA_DIR" ]]; then
+    log "Criando diretório de dados em $DATA_DIR..."
+    install -d -m 0750 "$DATA_DIR"
+    chown ubuntu:ubuntu "$DATA_DIR"
   fi
 }
 
@@ -145,6 +154,7 @@ build_project() {
 main() {
   require_root
   ensure_directory
+  ensure_data_directory
   create_swap_if_needed
   install_base_dependencies
   install_node
