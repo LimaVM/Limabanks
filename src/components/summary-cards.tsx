@@ -2,18 +2,25 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ArrowUpCircle, ArrowDownCircle, Wallet, CreditCard } from "lucide-react"
-import type { Account } from "@/lib/api-client"
+import type { Account, Transaction } from "@/lib/api-client"
 
 interface SummaryCardsProps {
   accounts: Account[]
+  transactions: Transaction[]
 }
 
-export function SummaryCards({ accounts }: SummaryCardsProps) {
+export function SummaryCards({ accounts, transactions }: SummaryCardsProps) {
   const totalBanksBalance = accounts.filter((a) => a.type === "bank").reduce((sum, a) => sum + a.balance, 0)
 
   const totalCardsBalance = accounts.filter((a) => a.type === "card").reduce((sum, a) => sum + a.balance, 0)
 
-  const totalExpenses = Math.abs(accounts.reduce((sum, a) => sum + (a.balance < 0 ? a.balance : 0), 0))
+  const totalExpenses = transactions.reduce((sum, transaction) => {
+    if (transaction.type !== "expense") {
+      return sum
+    }
+
+    return sum + Math.max(transaction.amount, 0)
+  }, 0)
 
   const totalBalance = totalBanksBalance + totalCardsBalance
 

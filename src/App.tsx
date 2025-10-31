@@ -270,7 +270,7 @@ export default function App() {
 
       <main className="container mx-auto px-4 py-8">
         <div className="space-y-8">
-          <SummaryCards accounts={accounts} />
+          <SummaryCards accounts={accounts} transactions={transactions} />
 
           <AccountManager accounts={accounts} onAdd={handleAddAccount} onDelete={handleDeleteAccount} />
 
